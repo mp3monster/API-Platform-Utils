@@ -1,3 +1,5 @@
+// documentation on this Utility is availabel at - http://blog.mp3monster.org/2018/02/27/APIVersioning
+
 import groovy.json.*
 import java.net.URLConnection
 import javax.net.ssl.*
@@ -14,7 +16,7 @@ def String outSvr = inSvr
 def int apiId = 1;
 def int apiIter = 0;
 def boolean overrideTarget = false;
-boolean displayAll = false // allows us to pretty print all the API calls if necessary
+boolean debug = false // allows us to pretty print all the API calls if necessary
 
 // list of root elements needing to be carried from trhe lookup to the insert / update
 def ArrayList rootRetainElements = new ArrayList();
@@ -159,7 +161,7 @@ try
 		        	break
 
 		        case '-debug':
-							displayAll = true;
+							debug = true;
 		        	argIdx += 1;
 		        	println ("Debug is set");
 		        	break
@@ -371,8 +373,8 @@ try
 	// create a context to work with
 	SSLContext sc = SSLContext.getInstance('SSL');
 
-	def jsonAPIDefn = getPolicy(apiId, apiIter, inUName, inPassword, inSvr, trustAllCerts, sc, displayAll)
-	if (displayAll) { println (new JsonBuilder(jsonAPIDefn).toPrettyString()) }
+	def jsonAPIDefn = getPolicy(apiId, apiIter, inUName, inPassword, inSvr, trustAllCerts, sc, debug)
+	if (debug) { println (new JsonBuilder(jsonAPIDefn).toPrettyString()) }
 
 	//if the action is just to view then exit NOW
 	 if (view != null)
@@ -398,7 +400,7 @@ try
 	 	 	 // loop through all the iterations from the current one going back and get the summary view
 	 	 	while (iterLoop > 0)
 	 	 	{
-				jsonAPIDefn = getPolicy(apiId, iterLoop, inUName, inPassword, inSvr, trustAllCerts, sc, displayAll)
+				jsonAPIDefn = getPolicy(apiId, iterLoop, inUName, inPassword, inSvr, trustAllCerts, sc, debug)
 	 	 	 	displayPolicySummary (jsonAPIDefn.name, jsonAPIDefn.details.description, jsonAPIDefn.version, 
 	 	 	 							jsonAPIDefn.stateUpdatedAt, jsonAPIDefn.state, jsonAPIDefn.iterationId);
 				iterLoop -= 1;
@@ -435,7 +437,7 @@ try
 		if (inSvr == outSvr)
 		{
 			// we're working with the same API - so it exists
-			if (displayAll) {println ("reverting forward")}
+			if (debug) {println ("reverting forward")}
 			resourcePath = "/apiplatform/management/v1/apis/"+apiId;
 			isInsert=true;
 			jsonAPIDefn.details.description += ' apply reversion to iteration '  + apiIter;	
@@ -443,13 +445,13 @@ try
 		else
 		{
 			// assume we're migrating from one server to another
-			if (displayAll) {println ("migrating")}
+			if (debug) {println ("migrating")}
 
 			resourcePath = "/apiplatform/management/v1/apis/"+apiId;
 			isInsert=false;
 
 			//test to see if already exists in target
-			if (policyExistsInTarget (jsonAPIDefn.name, outUName, outPassword, outSvr,trustAllCerts, sc, displayAll))
+			if (policyExistsInTarget (jsonAPIDefn.name, outUName, outPassword, outSvr,trustAllCerts, sc, debug))
 			{
 				println ("confirmed match")
 			}
@@ -467,7 +469,7 @@ try
 			}
 			jsonAPIDefn.details.description += ' was iteration '  + apiIter + " on API Platform " + inSvr;
 		}
-		pushPolicy (resourcePath, (new JsonBuilder(jsonAPIDefn).toPrettyString()), isInsert, outUName, outPassword, outSvr, trustAllCerts, sc, displayAll);
+		pushPolicy (resourcePath, (new JsonBuilder(jsonAPIDefn).toPrettyString()), isInsert, outUName, outPassword, outSvr, trustAllCerts, sc, debug);
 
 	}
 } 
