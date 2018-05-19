@@ -19,9 +19,9 @@ MATCHAPPNO = 0
 MATCHAPI = "API"
 MATCHAPINO = 1
 MatchType = MATCHAPINO
-matchParam = "-m"
+MatchTypeParam = "-m"
 
-MATCHAPIParam = "-n"
+MatchNameParam = "-n"
 TargetName = null
 DefaultFileName = "APIDoc"
 def String SingleFileName = DefaultFileName
@@ -41,8 +41,9 @@ IncludeAppInfo = true
 IncludeDraftPoliciesInfo = true
 CheckForExclusion = false
 ExclusionInfoCLIParam = "EXCLUDE"
+COMMENTEXCLUDETEXT="EXCLUDE"
 
-StopDocElement = "-s"
+StopDocParam = "-s"
 
 // API call header property
 Authorization = "Authorization"
@@ -214,22 +215,26 @@ StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMet
 	for (policyCtr = 0; policyCtr < apiData.implementation.policies.size(); policyCtr++)
 	{
 		StringBuffer line = new StringBuffer()
+		// if the policy is a draft and drafts are accepted or not a draft
 		if (((IncludeDraftPoliciesInfo) && (apiData.implementation.policies[policyCtr].draft == true)) ||
 		(apiData.implementation.policies[policyCtr].draft != true))
 		{
+			// has the policy entry got a defined type - it should have
 			if (apiData.implementation.policies[policyCtr].type != null)
 			{
+				if (DisplayAll) { println (NL+"policy to evaluate :" +new JsonBuilder( apiData.implementation.policies[policyCtr]).toPrettyString()) }
+
 				def policyMetadataEntry = policyMetadata.get(apiData.implementation.policies[policyCtr].type)
-				if (DisplayAll) { println ("policy metadata retrieved :" +new JsonBuilder(policyMetadataEntry).toPrettyString()+NL+NL) }
 
 				line.append (Bold + PolicyTypeLabel + Bold + policyMetadataEntry.name)
 				def String policyDescription = null
 
 				// get the description if there isnt a specific one for this policy instance, retrieve the policy standard definition
-				policyDescription = apiData.implementation.policies[policyCtr].comment
+				policyDescription = apiData.implementation.policies[policyCtr].comments
 				if (policyDescription != null)
 				{
 					policyDescription = policyDescription.trim()
+
 				}
 
 				if (policyMetadataEntry != null)
@@ -241,10 +246,12 @@ StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMet
 					}
 				}
 
+				// devaluate and action exclusion if set
 				if ((policyDescription != null) &&
 					CheckForExclusion &&
-					(policyDescription.endsWith("EXCLUDE")))
+					(policyDescription.endsWith(COMMENTEXCLUDETEXT)))
 				{
+					if (DisplayAll){println ("Applying exclusion to " + policyMetadataEntry.name)}
 						// instruction to exclude this policy has been allocated
 						policyDescription = null
 						line = null
@@ -393,13 +400,14 @@ void DisplayHelp()
 				}
 				break
 
-				case matchParam :
+				case MatchTypeParam :
 					String matchCommand = null
 					idx++
 					if (args.size() >= idx)
 					{
 						matchCommand = args[idx]
 						matchCommand = matchCommand.toUpperCase()
+						idx++
 					}
 					if (matchCommand == MATCHAPP)
 					{
@@ -416,11 +424,12 @@ void DisplayHelp()
 					}
 					break
 
-				case MATCHAPIParam :
+				case MatchNameParam :
 					idx++
 					if (args.size() >= idx)
 					{
 						TargetName = args[idx]
+						idx++
 					}
 					else
 					{
@@ -435,48 +444,49 @@ void DisplayHelp()
 					break
 
 				case DisplayHelp:
-				DisplayHelp()
-				idx++
-				System.exit(0)
-				break
+					DisplayHelp()
+					idx++
+					System.exit(0)
+					break
 
-				case StopDocElement:
-				def String elementsParam = null
-				idx++
-				if (args.size() >= idx)
-				{
-					elements = args[idx]
-					elements = elements.toUpperCase()
-					def List elements = elements.tokenize(',')
-					for (listIdx =0; listIdx < elements.size(); listIdx++)
+				case StopDocParam:
+					def String elementsParam = null
+					idx++
+					if (args.size() >= idx)
 					{
-						switch (elements[listIdx])
+						elements = args[idx]
+						elements = elements.toUpperCase()
+						def List elements = elements.tokenize(',')
+						for (listIdx =0; listIdx < elements.size(); listIdx++)
 						{
-							case VersionInfoCLIParam:
-							IncludeVersionInfo = false
-							println ("Version Info now OFF")
-							break
+							switch (elements[listIdx])
+							{
+								case VersionInfoCLIParam:
+								IncludeVersionInfo = false
+								println ("Version Info now OFF")
+								break
 
-							case PolicyInfoCLIParam:
-							IncludePolicyInfo = false
-							println ("Policy Info now OFF")
-							break
+								case PolicyInfoCLIParam:
+								IncludePolicyInfo = false
+								println ("Policy Info now OFF")
+								break
 
-							case ChangeInfoCLIParam:
-							IncludeChangeInfo = false
-							println ("Change Info now OFF")
-							break
+								case ChangeInfoCLIParam:
+								IncludeChangeInfo = false
+								println ("Change Info now OFF")
+								break
 
-							case ExclusionInfoCLIParam:
-							CheckForExclusion = true
-							println ("checking for exclusion tag in descriptions")
-							break
+								case ExclusionInfoCLIParam:
+								CheckForExclusion = true
+								println ("checking for exclusion tag in descriptions")
+								break
 
-							default:
-							println ("Don't recognize " + elements[listIdx] + " ignoring")
+								default:
+								println ("Don't recognize " + elements[listIdx] + " ignoring")
+							}
 						}
+						idx++
 					}
-				}
 				break
 
 				default:
