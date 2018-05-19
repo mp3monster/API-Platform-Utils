@@ -25,7 +25,7 @@ MatchNameParam = "-n"
 TargetName = null
 DefaultFileName = "APIDoc"
 def String SingleFileName = DefaultFileName
-final String fnParam = "-f"
+FileNameParam = "-f"
 // default to true so theat the finemae in the API NAME
 // if the -f option is used then this goes to false and SingleFileName is set
 def boolean MultiFile = true
@@ -206,7 +206,7 @@ class OverideHostnameVerifier implements HostnameVerifier
 			return apis
 		}
 
-
+// evaluate how to process the policies and then build output display
 StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMetadata)
 {
 	Boolean addHeader = true
@@ -351,6 +351,19 @@ StringBuffer processAppDetails (StringBuffer sb, Object appObj, HashMap appDescC
 void DisplayHelp()
 {
 	println ("================================================\nHelp:\n")
+	println ("Mandatory to provide server-url username password e.g. https://1.2.3.4/ me myPassword\n")
+	println ("Without these parameters the app will stop\n")
+	println ("optional parameters:")
+	println (DisplayAllCLI+" == displays all the activity information")
+	println (DisplayHelp+" == this information")
+	println (MatchNameParam + " <string> == used to apply a filter on the app or API name,\nif nothing set then all APIs are included")
+	println ("If the string contains spaces then this can be addressed by wrapping \nwith double quotes e.g. \"my multipart name\"")
+	println (MatchTypeParam + " <"+MATCHAPI+"|"+MATCHAPP+"> == apply the name filter to API names or App names, default is API")
+	println (FileNameParam+" <filename> == target the output to a single file, \nif not set each API is written to its own file")
+	println (StopDocParam+" <"+ChangeInfoCLIParam+"|"+VersionInfoCLIParam+"|"+PolicyInfoCLIParam+"|"+ExclusionInfoCLIParam+"> == stop the sections being included, \nmultiple elements can be included by comma separating without space characters")
+	println ("the "+ExclusionInfoCLIParam+ " is a special case as it looks in the policy comment to see if ends with " + COMMENTEXCLUDETEXT + " \nif present, that policy is excluded from the output")
+	println ("")
+	println ("All commands are case sensitive")
 	println ("Tool doc at: http://blog.mp3monster.org/2018/05/18/documenting-apis-on-the-oracle-api-platform")
 	println ("================================================\n")
 	System.exit(0)
@@ -366,20 +379,19 @@ void DisplayHelp()
 		{
 			if (args.size() < 3 || (args[0] == DisplayHelp))
 			{
-				println ("calling display help")
 				DisplayHelp()
 			}
 			svr = args [0]
 			uname = args[1]
 			password = args [2]
 
-			println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)
+			id (DisplayAll) {println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)}
 
 			def idx = 3
 			while (idx < args.size())
 			switch (args[idx])
 			{
-				case fnParam :
+				case FileNameParam :
 				if (args.size() > idx+1)
 				{
 					idx = idx+1
@@ -433,7 +445,7 @@ void DisplayHelp()
 					}
 					else
 					{
-						println ("No name provided as a filter")
+						if (DisplayAll){println ("No name provided as a filter")}
 					}
 					break
 
@@ -463,26 +475,26 @@ void DisplayHelp()
 							{
 								case VersionInfoCLIParam:
 								IncludeVersionInfo = false
-								println ("Version Info now OFF")
+								if (DisplayAll) {println ("Version Info now OFF")}
 								break
 
 								case PolicyInfoCLIParam:
 								IncludePolicyInfo = false
-								println ("Policy Info now OFF")
+								if (DisplayAll) {println ("Policy Info now OFF")}
 								break
 
 								case ChangeInfoCLIParam:
 								IncludeChangeInfo = false
-								println ("Change Info now OFF")
+								if (DisplayAll) {println ("Change Info now OFF")}
 								break
 
 								case ExclusionInfoCLIParam:
 								CheckForExclusion = true
-								println ("checking for exclusion tag in descriptions")
+								if (DisplayAll) {println ("checking for exclusion tag in descriptions")}
 								break
 
 								default:
-								println ("Don't recognize " + elements[listIdx] + " ignoring")
+								if (DisplayAll) {println ("Don't recognize " + elements[listIdx] + " ignoring")}
 							}
 						}
 						idx++
