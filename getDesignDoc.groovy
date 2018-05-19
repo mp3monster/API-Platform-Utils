@@ -377,7 +377,7 @@ void DisplayHelp()
 		//===============
 
  	// handle CLI
-	println ("at CLI with " + args.size() + " args\n" + args.toString())
+	if (DisplayAll) {println ("at CLI with " + args.size() + " args\n" + args.toString())}
 	if (args.size() > 0)
 	{
 		try
@@ -390,7 +390,7 @@ void DisplayHelp()
 			uname = args[1]
 			password = args [2]
 
-			id (DisplayAll) {println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)}
+			if (DisplayAll) {println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)}
 
 			def idx = 3
 			while (idx < args.size())
@@ -518,6 +518,7 @@ void DisplayHelp()
 				println (err.getMessage())
 		  	err.printStackTrace()
 		  }
+			println ("Error 1")
 		  DisplayHelp()
 			System.exit(0)
 		}
@@ -537,6 +538,7 @@ void DisplayHelp()
 	catch (Exception err)
 	{
 		println (err.getMessage()  + "\n")
+		println ("Error 2")
 		if (DisplayAll) {	err.printStackTrace()}
 		DisplayHelp()
 		System.exit(0)
