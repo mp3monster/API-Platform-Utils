@@ -1,3 +1,8 @@
+//license : http://creativecommons.org/licenses/by/4.0/
+//Creative Commons License
+//This work is licensed under a Creative Commons Attribution 4.0 International License
+// CC BY
+
 import groovy.json.*
 import java.net.URLConnection
 import javax.net.ssl.*
