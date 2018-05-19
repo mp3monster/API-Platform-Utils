@@ -10,15 +10,19 @@ def String password = null
 //def String svr = "https://130.162.67.188"
 def String svr = null
 
+DisplayHelp = "-h"
+
 DisplayAllCLI = "-d"
 
-final MATCHAPP = "APP"
-final MATCHNAME = "NAME"
-def String matchType = MATCHNAME
+MATCHAPP = "APP"
+MATCHAPPNO = 0
+MATCHAPI = "API"
+MATCHAPINO = 1
+MatchType = MATCHAPINO
 matchParam = "-m"
 
-MatchNameParam = "-n"
-def String matchName = null
+MATCHAPIParam = "-n"
+TargetName = null
 DefaultFileName = "APIDoc"
 def String SingleFileName = DefaultFileName
 final String fnParam = "-f"
@@ -35,9 +39,12 @@ IncludePolicyInfo = true
 PolicyInfoCLIParam = "POLICYINFO"
 IncludeAppInfo = true
 IncludeDraftPoliciesInfo = true
+CheckForExclusion = false
+ExclusionInfoCLIParam = "EXCLUDE"
 
 StopDocElement = "-s"
 
+// API call header property
 Authorization = "Authorization"
 
 
@@ -68,151 +75,15 @@ IteratioNLabel = "Iteration No:"
 
 PolicyTypeLabel = "Policy:"
 
+NOREQUESTTODISPLAY = "-- No Requests to Display --"
+NORESPONSETODISPLAY = "-- No Responses to Display --"
 
 noDescription = " -- No Description Available --"
 FilePostfix = ".md"
 
 AppRef = "references.applications"
 
-if (args.size() > 0)
-{
-	try
-	{
-		svr = args [0]
-		uname = args[1]
-		password = args [2]
 
-		println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)
-
-		def idx = 3
-		while (idx < args.size())
-		switch (args[idx])
-		{
-			case fnParam :
-			if (args.length() > idx+1)
-			{
-				idx = idx+1
-				SingleFileName = args[idx]
-				SingleFileName.trim()
-
-				if (SingleFileName.length() == 0 )
-				{
-					println ("Malformed filename parameter")
-					SingleFileName = DefaultFileName + FilePostfix
-				}
-				else
-				{
-					// its a legitimate filename - so switch on single file
-					MultiFile = false
-					idx++
-				}
-			}
-			break
-
-			case matchParam :
-			String matchCommand = null
-			idx++
-			if (args.size() >= idx)
-			{
-				matchCommand = args[idx]
-				matchCommand = matchCommand.toUpperCase()
-			}
-			if (matchCommand == MATCHAPP)
-			{
-				matchType = MATCHAPP
-			}
-			else if (matchCommand == MATCHNAME)
-			{
-				matchType = MATCHNAME
-			}
-			else
-			{
-				println ("didn't understand match type param:" + matchCommand + " disreguarding")
-			}
-			break
-
-			case MatchNameParam :
-			idx++
-			if (args.size() >= idx)
-			{
-				matchName = args[idx]
-			}
-			else
-			{
-				println ("No name provided as a filter")
-			}
-
-			case DisplayAllCLI:
-			DisplayAll = true
-			println ("Display All Enabled")
-			idx++
-			break
-
-			case StopDocElement:
-			def String elementsParam = null
-			idx++
-			if (args.size() >= idx)
-			{
-				elements = args[idx]
-				elements = elements.toUpperCase()
-				def List elements = elements.tokenize(',')
-				for (listIdx =0; listIdx < elements.size(); listIdx++)
-				{
-					switch (elements[listIdx])
-					{
-						case VersionInfoCLIParam:
-						IncludeVersionInfo = false
-						println ("Version Info now OFF")
-						break
-
-						case PolicyInfoCLIParam:
-						IncludePolicyInfo = false
-						println ("Policy Info now OFF")
-						break
-
-						case ChangeInfoCLIParam:
-						IncludeChangeInfo = false
-						println ("Change Info now OFF")
-						break
-
-						default:
-						println ("Don't recognize " + elements[listIdx] + " ignoreing")
-					}
-				}
-			}
-			break
-
-			default:
-			println ("Unknown parameter - "+args[idx])
-			idx++
-		}
-	}
-	catch (Exception err)
-	{
-		println ("Expect server username password")
-		err.printStackTrace()
-		System.exit(0)
-	}
-}
-else
-{
-	println ("Going to try with defaults in script")
-}
-
-// verify all the parameters
-try
-{
-	assert (uname.size() > 0) : "No username"
-	assert (password.size() > 0) : "No password"
-	assert (svr.size() > 0) : "No server"
-}
-catch (Exception err)
-{
-	println (err.getMessage()  + "\n")
-	if (DisplayAll) {	err.printStackTrace()}
-	println ("\nExpect server username password\n\n")
-	System.exit(0)
-}
 
 // certificate by pass ====================
 // http://codingandmore.blogspot.co.uk/2011/07/json-and-ssl-in-groovy-how-to-ignore.html
@@ -247,7 +118,8 @@ class OverideHostnameVerifier implements HostnameVerifier
 
 			// ================================================================
 
-			void matchAPIName (Object apiData, ArrayList apis, String matchName, String apiDataURL)
+
+			ArrayList matchAPIName (Object apiData, ArrayList apis, String name, String apiDataURL)
 			{
 				def String apiName = apiData.vanityName
 
@@ -256,16 +128,30 @@ class OverideHostnameVerifier implements HostnameVerifier
 					apiName = apiData.name
 				}
 
-				if ((apiName != null) &&  (matchName != null))
+				if ((apiName != null) && (name != null))
 				{
-					if (apiName.contains(matchName))
+					if (apiName.contains(name))
 					{
-						apis.add (apiDataURL);
+						apis.add (apiDataURL)
+						if (DisplayAll)
+						{
+							println ("Matched API " + apiName)
+						}
 					}
 				}
+				else
+				{
+					apis.add (apiDataURL);
+					if (DisplayAll)
+					{
+						println ("Matched API " + apiName)
+					}
+				}
+				return apis
 			}
 
-			void matchAppName (Object apiData, ArrayList apis, String matchName,  String apiDataURL)
+			// look to match against App names
+			ArrayList matchAppName (Object apiData, ArrayList apis, String name,  String apiDataURL)
 			{
 				try
 				{
@@ -280,13 +166,15 @@ class OverideHostnameVerifier implements HostnameVerifier
 								def app = new URL(apiData.links[apiRefCtr].href).openConnection()
 								app.setRequestProperty(Authorization, authString)
 								def appData = new JsonSlurper().parse(app.getInputStream())
+								// if there is no match name we add everything to the list
 								if ((appData.items != null) && (appData.items[0] != null) && (appData.items[0].name != null))
 								{
-									if (appData.items[0].name.contains(matchName))
+									if ((name == null) || (appData.items[0].name.contains(name)))
 									{
 										apis.add (apiDataURL);
-										if (DisplayAll) {
-											println ("MATCHED App name:" + appData.items[0].name + " with " + matchName)
+										if (DisplayAll)
+										{
+											println ("MATCHED App name:" + appData.items[0].name + " with " + name)
 										}
 
 									}
@@ -308,8 +196,13 @@ class OverideHostnameVerifier implements HostnameVerifier
 			}
 			catch (FileNotFoundException err)
 			{
-				println ("No URL for " + err.getMessage())
+				if (DisplayAll)
+				{
+					println ("No URL for " + err.getMessage())
+				}
 			}
+
+			return apis
 		}
 
 
@@ -324,7 +217,6 @@ StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMet
 		if (((IncludeDraftPoliciesInfo) && (apiData.implementation.policies[policyCtr].draft == true)) ||
 		(apiData.implementation.policies[policyCtr].draft != true))
 		{
-
 			if (apiData.implementation.policies[policyCtr].type != null)
 			{
 				def policyMetadataEntry = policyMetadata.get(apiData.implementation.policies[policyCtr].type)
@@ -335,6 +227,11 @@ StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMet
 
 				// get the description if there isnt a specific one for this policy instance, retrieve the policy standard definition
 				policyDescription = apiData.implementation.policies[policyCtr].comment
+				if (policyDescription != null)
+				{
+					policyDescription = policyDescription.trim()
+				}
+
 				if (policyMetadataEntry != null)
 				{
 					if ((policyDescription == null) || (policyDescription.length() == 0))
@@ -344,11 +241,23 @@ StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMet
 					}
 				}
 
+				if ((policyDescription != null) &&
+					CheckForExclusion &&
+					(policyDescription.endsWith("EXCLUDE")))
+				{
+						// instruction to exclude this policy has been allocated
+						policyDescription = null
+						line = null
+				}
+
 				if (policyDescription != null)
 				{
 					line.append ( " : " + policyDescription + NL)
 				}
-				line.append (NL)
+				if (line != null)
+				{
+					line.append (NL)
+				}
 				if (DisplayAll) { println ("policy info:" +new JsonBuilder(apiData.implementation.policies[policyCtr]).toPrettyString()+NL+NL) }
 			}
 		}
@@ -358,15 +267,36 @@ StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMet
 
 	sb.append(H2 + " " + PolicyHeader + NL)
 	sb.append (H3+RequestsHeader + NL)
+	int lineCount = 0;
 	for (requestCtr = 0; requestCtr < apiData.implementation.executions.request.size(); requestCtr++)
 	{
-  	sb.append (policyTexts.get(apiData.implementation.executions.request[requestCtr]))
+		requestLine = policyTexts.get(apiData.implementation.executions.request[requestCtr])
+		if (requestLine != null)
+		{
+			sb.append (requestLine)
+			lineCount++
+		}
+	}
+
+	if (lineCount == 0)
+	{
+		sb.append (NOREQUESTTODISPLAY)
 	}
 
 	sb.append (H3+ResponsesHeader + NL)
+	lineCount = 0
 	for (responseCtr = 0; responseCtr < apiData.implementation.executions.response.size(); responseCtr++)
 	{
-  	sb.append (policyTexts.get(apiData.implementation.executions.response[responseCtr]))
+		responseLine = policyTexts.get(apiData.implementation.executions.response[responseCtr])
+		if (responseLine != null)
+		{
+	  	sb.append (responseLine)
+			lineCount++
+		}
+	}
+	if (lineCount == 0)
+	{
+		sb.append (NORESPONSETODISPLAY)
 	}
 
 	return sb
@@ -411,8 +341,179 @@ StringBuffer processAppDetails (StringBuffer sb, Object appObj, HashMap appDescC
 	return sb
 }
 
+void DisplayHelp()
+{
+	println ("================================================\nHelp:\n")
+	println ("Tool doc at: http://blog.mp3monster.org/2018/05/18/documenting-apis-on-the-oracle-api-platform")
+	println ("================================================\n")
+	System.exit(0)
+}
+
 		//===============
 
+ 	// handle CLI
+	println ("at CLI with " + args.size() + " args\n" + args.toString())
+	if (args.size() > 0)
+	{
+		try
+		{
+			if (args.size() < 3 || (args[0] == DisplayHelp))
+			{
+				println ("calling display help")
+				DisplayHelp()
+			}
+			svr = args [0]
+			uname = args[1]
+			password = args [2]
+
+			println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)
+
+			def idx = 3
+			while (idx < args.size())
+			switch (args[idx])
+			{
+				case fnParam :
+				if (args.size() > idx+1)
+				{
+					idx = idx+1
+					SingleFileName = args[idx]
+					SingleFileName.trim()
+
+					if (SingleFileName.length() == 0 )
+					{
+						println ("Malformed filename parameter")
+						SingleFileName = DefaultFileName + FilePostfix
+					}
+					else
+					{
+						// its a legitimate filename - so switch on single file
+						MultiFile = false
+						idx++
+					}
+				}
+				break
+
+				case matchParam :
+					String matchCommand = null
+					idx++
+					if (args.size() >= idx)
+					{
+						matchCommand = args[idx]
+						matchCommand = matchCommand.toUpperCase()
+					}
+					if (matchCommand == MATCHAPP)
+					{
+						MatchType = MATCHAPPNO
+					}
+					else if (matchCommand == MATCHAPI)
+					{
+						MatchType = MATCHAPINO
+					}
+					else
+					{
+						if (DisplayAll)	{println ("didn't understand match type param:" + matchCommand + " disreguarding")}
+						MatchType = MATCHAPINO
+					}
+					break
+
+				case MATCHAPIParam :
+					idx++
+					if (args.size() >= idx)
+					{
+						TargetName = args[idx]
+					}
+					else
+					{
+						println ("No name provided as a filter")
+					}
+					break
+
+				case DisplayAllCLI:
+					DisplayAll = true
+					println ("Display All Enabled")
+					idx++
+					break
+
+				case DisplayHelp:
+				DisplayHelp()
+				idx++
+				System.exit(0)
+				break
+
+				case StopDocElement:
+				def String elementsParam = null
+				idx++
+				if (args.size() >= idx)
+				{
+					elements = args[idx]
+					elements = elements.toUpperCase()
+					def List elements = elements.tokenize(',')
+					for (listIdx =0; listIdx < elements.size(); listIdx++)
+					{
+						switch (elements[listIdx])
+						{
+							case VersionInfoCLIParam:
+							IncludeVersionInfo = false
+							println ("Version Info now OFF")
+							break
+
+							case PolicyInfoCLIParam:
+							IncludePolicyInfo = false
+							println ("Policy Info now OFF")
+							break
+
+							case ChangeInfoCLIParam:
+							IncludeChangeInfo = false
+							println ("Change Info now OFF")
+							break
+
+							case ExclusionInfoCLIParam:
+							CheckForExclusion = true
+							println ("checking for exclusion tag in descriptions")
+							break
+
+							default:
+							println ("Don't recognize " + elements[listIdx] + " ignoring")
+						}
+					}
+				}
+				break
+
+				default:
+				println ("Unknown parameter - "+args[idx])
+				idx++
+			}
+		}
+		catch (Exception err)
+		{
+			if (DisplayAll)
+			{
+				println (err.getMessage())
+		  	err.printStackTrace()
+		  }
+		  DisplayHelp()
+			System.exit(0)
+		}
+	}
+	else
+	{
+		DisplayHelp()
+	}
+
+	// verify all the parameters
+	try
+	{
+		assert (uname.size() > 0) : "No username"
+		assert (password.size() > 0) : "No password"
+		assert (svr.size() > 0) : "No server"
+	}
+	catch (Exception err)
+	{
+		println (err.getMessage()  + "\n")
+		if (DisplayAll) {	err.printStackTrace()}
+		DisplayHelp()
+		System.exit(0)
+	}
 
 		// main
 
@@ -457,30 +558,37 @@ StringBuffer processAppDetails (StringBuffer sb, Object appObj, HashMap appDescC
 			for (idx = 0; idx <  listAPIData.count; idx++)
 			{
 				def apiDataURL = svr + "/apiplatform/management/v1/apis/" + listAPIData.items[idx].id
-				//println ("requesting : " + apiDataURL)
+				if (DisplayAll){println ("requesting : " + apiDataURL)}
 				def api = new URL(apiDataURL).openConnection()
 				api.setRequestProperty(Authorization, authString)
 				def apiData = new JsonSlurper().parse(api.getInputStream())
 
-				switch (matchType)
+				switch (MatchType)
 				{
-					case MATCHNAME:
-					matchAPIName (apiData, apis, matchName, apiDataURL)
-					break;
-					case MATCHAPP:
-					matchAppName (apiData, apis, matchName, apiDataURL)
-					break
+					case MATCHAPINO:
+						apis = matchAPIName (apiData, apis, TargetName, apiDataURL)
+						break
+
+					case MATCHAPPNO:
+						apis = matchAppName (apiData, apis, TargetName, apiDataURL)
+						break
+
+					default:
+					 if (DisplayAll) {println ("Unknown match type! :" + MatchType)}
 				}
 			}
 		}
 		catch (Exception excep)
 		{
-			excep.printStackTrace()
+			if (DisplayAll)
+			{
+				excep.printStackTrace()
+			}
 		}
 
 		if (DisplayAll)
 		{
-			println ("located APIs to document/n======================================/n======================================")
+			println ("======================================")
 			println ("generating docs for " + apis.size() + " APIs")
 		}
 		def String fileName = null
