@@ -125,23 +125,24 @@ class OverideHostnameVerifier implements HostnameVerifier
 			// ================================================================
 
 
+			// this function takes a json object containing the known APIs and
+			// evaluates the API details to see if they match. If they MATCHED
+			// if successful add it to the list provided and return trhe amended list
 			ArrayList matchAPIName (Object apiData, ArrayList apis, String name, String apiDataURL)
 			{
-				def String apiName = apiData.vanityName
+				if (DisplayAll) {	println ("evaluating >" + name + "< against vanity name>" + apiData.vanityName + "< and internal name >" +  apiData.name +"<")}
 
-				if (apiName == null)
+				// if we dont have a match value then we just add it to the list
+				if (name != null)
 				{
-					apiName = apiData.name
-				}
-
-				if ((apiName != null) && (name != null))
-				{
-					if (apiName.contains(name))
+					// if the name isn't null then we can eval the contains path.  If the name cant evaluate then try the vanity name
+					if (((apiData.name != null) && (apiData.name.contains(name))) ||
+					((apiData.vanityName != null) && (apiData.vanityName.contains(name))))
 					{
 						apis.add (apiDataURL)
 						if (DisplayAll)
 						{
-							println ("Matched API " + apiName)
+							println ("Matched API " + apiData.name + " --> " + apiData.vanityName)
 						}
 					}
 				}
@@ -150,7 +151,7 @@ class OverideHostnameVerifier implements HostnameVerifier
 					apis.add (apiDataURL);
 					if (DisplayAll)
 					{
-						println ("Matched API " + apiName)
+						println ("Matched API " + apiData.name + " --> " + apiData.vanityName)
 					}
 				}
 				return apis
@@ -411,6 +412,7 @@ void DisplayHelp()
 					else
 					{
 						// its a legitimate filename - so switch on single file
+						if (DisplayAll){"Single file target, filename is  " + SingleFileName}
 						MultiFile = false
 						idx++
 					}
@@ -429,10 +431,12 @@ void DisplayHelp()
 					if (matchCommand == MATCHAPP)
 					{
 						MatchType = MATCHAPPNO
+						if (DisplayAll)	{println ("Matching for App names")}
 					}
 					else if (matchCommand == MATCHAPI)
 					{
 						MatchType = MATCHAPINO
+						if (DisplayAll)	{println ("Matching for API names explicitly set")}
 					}
 					else
 					{
@@ -446,6 +450,8 @@ void DisplayHelp()
 					if (args.size() >= idx)
 					{
 						TargetName = args[idx]
+						if (DisplayAll)	{println ("Matching against " + TargetName)}
+
 						idx++
 					}
 					else
