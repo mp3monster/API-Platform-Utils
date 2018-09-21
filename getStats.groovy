@@ -9,7 +9,10 @@ import javax.net.ssl.*
 import groovy.transform.Field
 
 DisplayAll = false // allows us to pretty print all the API calls if necessary
-DisplayAllCLI = "-d"
+@Field final DisplayAllCLI = "-d"
+
+Debug = false
+// change to true for debug print statements
 
 // if defaults are set then calling with the default values will attempted
 def String uname = null
@@ -17,55 +20,59 @@ def String password = null
 def String svr = null
 
 @Field CompleteGatewayList = []
+@Field CompleteGatewayIdList = []
 @Field CompleteAPIList = []
 @Field int totalAPICalls = 0
 @Field CompleteAppsList = []
+@Field CompleteActiveNodeList = []
 
-DisplayHelp = "-h"
+@Field final DisplayHelp = "-h"
 
-ALLGateways="ALL"
+@Field final ALLGateways="ALL"
 
-DefaultFileName ="report.csv"
-FileNameCLIParam = "-f"
+@Field final DefaultFileName ="report.csv"
+@Field final FileNameCLIParam = "-f"
 ReportFileName = DefaultFileName
 // defines the filename to be used
 
 // API call header property
-Authorization = "Authorization"
+@Field final Authorization = "Authorization"
 
 
-DataTypeCLIParam="-t"
-AppDataTypeShortLabel="apps"
-AppDataTypeLabel="applications"
-ApiDataTypeLabel="apis"
+@Field final DataTypeCLIParam="-t"
+@Field final AppDataTypeShortLabel="apps"
+@Field final AppDataTypeLabel="applications"
+@Field final ApiDataTypeLabel="apis"
 AppsList = 0
 APIsList = 1
 ListType = AppsList
+
+@Field final ACTIVE = "ACTIVE"
 
 // allow the category to be configurable against apiIds or appIds
 DataGrouping = "apiIds"
 
 // allow duration choicers of last7days, last30days, last365days
-ReportDuration30DayLabel="last30days"
-ReportDuration7DayLabel="last7days"
-ReportDuration1DayLabel="last24hours"
-ReportDurationYearLabel="last365days"
+@Field final ReportDuration30DayLabel="last30days"
+@Field final ReportDuration7DayLabel="last7days"
+@Field final ReportDuration1DayLabel="last24hours"
+@Field final ReportDurationYearLabel="last365days"
 ReportDurationLabel = ReportDuration30DayLabel
-Days365Duration=0
-Days30Duration=1
-Days7Duration=2
-Days1Duration=3
+@Field final Days365Duration=0
+@Field final Days30Duration=1
+@Field final Days7Duration=2
+@Field final Days1Duration=3
 ReportDurationId=Days30Duration
-DurationCLIParam = "-p" // for period
+final DurationCLIParam = "-p" // for period
 
-DAY="DAY"
-MONTH="MONTH"
-HOUR="HOUR"
+@Field final DAY="DAY"
+@Field final MONTH="MONTH"
+@Field final HOUR="HOUR"
 
 LogicalGateway = "PROD"
 LoglicalGatewayCLIParam = "-g"
 
-SEP = "," // the delimiter/separator to use
+@Field final SEP = "," // the delimiter/separator to use
 
 // certificate by pass ====================
 // http://codingandmore.blogspot.co.uk/2011/07/json-and-ssl-in-groovy-how-to-ignore.html
@@ -102,13 +109,14 @@ trustAllCerts[0] = new TrustManager()
 
 void outputTotals (String timeQuantity)
 {
-	println ("======================")
-	println ("==      Stats       ==")
-	println ("Total gateways = " + CompleteGatewayList.size())
-	println ("Total APIs = " + CompleteAPIList.size())
-	println ("Total API calls = " + totalAPICalls + " over " + timeQuantity)
-	println ("Total Apps = " + CompleteAppsList.size())
-	println ("======================")
+	println ("============================================")
+	println ("====               Stats                ====")
+	println ("Total gateways      = " + CompleteGatewayList.size())
+	println ("Total APIs         = " + CompleteAPIList.size())
+	println ("Total API calls    = " + totalAPICalls + " over " + timeQuantity)
+	println ("Total Apps         = " + CompleteAppsList.size())
+	println ("Total Active nodes = " + CompleteActiveNodeList.size())
+	println ("============================================")
 
 }
 
@@ -257,10 +265,10 @@ void DisplayHelp()
 		}
 		catch (Exception err)
 		{
-			if (DisplayAll)
+			if (Debug)
 			{
 				println (err.getMessage())
-		  	err.printStackTrace()
+		  		err.printStackTrace()
 		  }
 		  DisplayHelp()
 			System.exit(0)
@@ -282,7 +290,7 @@ void DisplayHelp()
 	{
 		println (err.getMessage()  + "\n")
 		println ("Error 2")
-		if (DisplayAll) {	err.printStackTrace()}
+		if (Debug) {	err.printStackTrace()}
 		DisplayHelp()
 		System.exit(0)
 	}
@@ -318,7 +326,7 @@ HashMap getIds (int listType, String authString, String svr, ArrayList trackerLi
 	for (int idx = 0; idx < count; idx++)
 	{
 		result.put (JSONData.items[idx].id.toInteger(), JSONData.items[idx].name)
-		if (DisplayAll){println ("Adding:(" + JSONData.items[idx].id + ")" + JSONData.items[idx].name)}
+		if (Debug){println ("Adding:(" + JSONData.items[idx].id + ")" + JSONData.items[idx].name)}
 
 		if (!trackerList.contains (JSONData.items[idx].name))
 		{
@@ -326,7 +334,7 @@ HashMap getIds (int listType, String authString, String svr, ArrayList trackerLi
 		}
 	}
 
-	if (DisplayAll){println ("Data retrieved for type " + listType + ":\n" +new JsonBuilder(JSONData).toPrettyString())}
+	if (Debug){println ("Data retrieved for type " + listType + ":\n" +new JsonBuilder(JSONData).toPrettyString())}
 
 return result
 }
@@ -345,7 +353,7 @@ String  getGatewayIds (String svr, String authString, String gatewayType)
 	def JSONData = new JsonSlurper().parse(queryURL.getInputStream())
 	// locate the gateway Ids based on environment
 
-	if (DisplayAll){println ("Gateways:\n" +new JsonBuilder(JSONData).toPrettyString())}
+	if (Debug){println ("Gateways:\n" +new JsonBuilder(JSONData).toPrettyString())}
 
 	for (int idx = 0; idx < JSONData.count; idx++)
 	{
@@ -358,7 +366,7 @@ String  getGatewayIds (String svr, String authString, String gatewayType)
 			}
 			gatewayIds.append(JSONData.items[idx].id)
 
-			println ("Gateway " + name + " (" +JSONData.items[idx].id+ ") identified")
+			if (DisplayAll){println ("Gateway " + name + " (" +JSONData.items[idx].id+ ") identified")}
 
 		}
 
@@ -366,6 +374,7 @@ String  getGatewayIds (String svr, String authString, String gatewayType)
 		if (!CompleteGatewayList.contains(name)) 
 		{
 			CompleteGatewayList.add (name)
+			CompleteGatewayIdList.add(JSONData.items[idx].id)
 		}	
 	}
 
@@ -373,12 +382,81 @@ String  getGatewayIds (String svr, String authString, String gatewayType)
 	return gatewayIds.toString()
 }
 
+String getNodeDetails (String id, String authString, String svr, String filterState)
+{
+	String nodeInfo = ""
+	String query = svr + "/apiplatform/management/v1/gateways/"+id+"/nodes"
+	def queryURL = new URL(query).openConnection()
+	queryURL.setRequestProperty(Authorization, authString)
+	def JSONData = new JsonSlurper().parse(queryURL.getInputStream())
+
+	// if I have data thern ...
+	if ((JSONData != null) && (JSONData.items != null))
+	{
+		// for each node entry ....
+		for (int idx = 0; idx < JSONData.items.size(); idx++)
+		{
+			// if I will accept any state then check and add to my list and node info string
+			if (filterState == null)
+			{
+				// count all states
+				nodeInfo += JSONData.items[idx].name + " (" + JSONData.items[idx].state + ") updated at " + JSONData.items[idx].contactedAt + "\n"
+
+				// if not yet in my node list - then add it -- we assume nodes are uniquely named
+				if (!CompleteActiveNodeList.contains(JSONData.items[idx].name))
+				{
+					CompleteActiveNodeList.add(JSONData.items[idx].name)
+				}
+			}
+			else
+			{
+				// i must be  state senstivie - do I have a match ?
+				if (JSONData.items[idx].state == filterState)
+				{
+					nodeInfo += JSONData.items[idx].name + " (" + JSONData.items[idx].state + ") updated at " + JSONData.items[idx].contactedAt + "\n"
+
+					// if not yet in my node list - then add it -- we assume nodes are uniquely named
+					if (!CompleteActiveNodeList.contains(JSONData.items[idx].name))
+					{
+						CompleteActiveNodeList.add(JSONData.items[idx].name)
+					}					
+				}
+			}
+
+		}
+	
+	}
+		
+	return nodeInfo
+}
+
+void getGatewayNodes (ArrayList gatewayIds, String authString, String svr, String state)
+{
+	String nodeInfo = ""
+	for (int idx = 0; idx < gatewayIds.size(); idx++)
+	{
+		// get node info
+
+		nodeInfo = getNodeDetails (CompleteGatewayIdList[idx], authString, svr, state)
+
+		if (true) 
+		{
+			if (nodeInfo != null)
+			{
+				println ("Nodes for Gateway :"+ CompleteGatewayList[idx] + "("+ CompleteGatewayIdList[idx]+")")
+				println (nodeInfo)
+			}
+		}
+
+	}	
+}
+
 // derives the header information from a query result
 String createCSVHeaderRow (Object jsonObj, String label)
 {
 	StringBuffer sb = new StringBuffer()
 
- if (DisplayAll){println ("row obj " + rowName + ":\n" +new JsonBuilder(jsonObj).toPrettyString())}
+ if (Debug){println ("row obj " + rowName + ":\n" +new JsonBuilder(jsonObj).toPrettyString())}
 
 	sb.append (label)
 	if (jsonObj != null)
@@ -399,7 +477,7 @@ String createCSVRow (Object jsonObj, String rowName, int maxValues)
 {
 	StringBuffer sb = new StringBuffer()
 
- 	if (DisplayAll){println ("row obj " + rowName + ":\n" +new JsonBuilder(jsonObj).toPrettyString())}
+ 	if (Debug){println ("row obj " + rowName + ":\n" +new JsonBuilder(jsonObj).toPrettyString())}
 
 	sb.append (rowName)
 	if (jsonObj != null)
@@ -434,7 +512,7 @@ String createCSVRow (Object jsonObj, String rowName, int maxValues)
 
 		}
 
-		println ("Total call count for " + rowName + "="+ subtotalCalls)
+		if (DisplayAll){println ("Total call count for " + rowName + "="+ subtotalCalls)}
 		totalAPICalls += subtotalCalls
 
 	}
@@ -460,7 +538,6 @@ String createCSVRow (Object jsonObj, String rowName, int maxValues)
 		sc.init(null, trustAllCerts, new java.security.SecureRandom());
 		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 		HttpsURLConnection.setDefaultHostnameVerifier((HostnameVerifier)new OverideHostnameVerifier());
-
 
 		try
 		{
@@ -534,6 +611,7 @@ String createCSVRow (Object jsonObj, String rowName, int maxValues)
 
 				query= svr + "/apiplatform/analytics/v1/timeSeries/requests/all"+"?gatewayIds="+gatewayIds+"&groupBys"+DataGrouping + "&timeSetting="+timeQuantity+ "&timeGroupSize=1&timeUnit="+timeUnit+"&"+idParam+"="+id
 
+
 				def queryURL = new URL(query).openConnection()
 				queryURL.setRequestProperty(Authorization, authString)
 				def JSONData = new JsonSlurper().parse(queryURL.getInputStream())
@@ -553,8 +631,9 @@ String createCSVRow (Object jsonObj, String rowName, int maxValues)
 
 				row = createCSVRow (JSONData, name, colCount)
 
-				if (DisplayAll){println (row)}
+				if (DisplayAll){println ("CSV line:" + row)}
 				file.append (row + "\n")
+			
 			} // end of each
 
 			switch (ListType)
@@ -572,6 +651,8 @@ String createCSVRow (Object jsonObj, String rowName, int maxValues)
 				default:
 				println ("Unexpected option")
 			}
+
+			getGatewayNodes (CompleteGatewayIdList, authString, svr, ACTIVE)
 			outputTotals (timeQuantity)
 		}
 		catch (Exception err)
