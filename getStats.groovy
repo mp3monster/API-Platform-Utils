@@ -339,7 +339,9 @@ HashMap getIds (int listType, String authString, String svr, ArrayList trackerLi
 return result
 }
 
-
+// this connects to the management server using the base url (svr) and credentials to retrieve the logical gateway information
+// the gateways identified can be lomited by using the gatewayType (a string presentation of Prod etc) The gateway type is predicated on
+// the use of a naming convention.
 String  getGatewayIds (String svr, String authString, String gatewayType)
 {
 	String gwayTypeLower = gatewayType.toLowerCase()
@@ -382,6 +384,8 @@ String  getGatewayIds (String svr, String authString, String gatewayType)
 	return gatewayIds.toString()
 }
 
+// This retrieves information about the nodes for a specific gateway. The information is aggregated into a text structure,
+// and the global list of gateway nodes is updated assuming the state filter is satisfied. Note a null state means ALL nodes
 String getNodeDetails (String id, String authString, String svr, String filterState)
 {
 	String nodeInfo = ""
@@ -430,6 +434,9 @@ String getNodeDetails (String id, String authString, String svr, String filterSt
 	return nodeInfo
 }
 
+// This takes the gateway Ids list and iterates through interogating the gateway about node details. The state value is passed through as a filter on the 
+// node states accepted - as defined in the Oracle documentation. If the value is null then ALL nodes are interrogated
+// the information is sent to concole if DisplayAll is set
 void getGatewayNodes (ArrayList gatewayIds, String authString, String svr, String state)
 {
 	String nodeInfo = ""
@@ -439,7 +446,7 @@ void getGatewayNodes (ArrayList gatewayIds, String authString, String svr, Strin
 
 		nodeInfo = getNodeDetails (CompleteGatewayIdList[idx], authString, svr, state)
 
-		if (true) 
+		if (DisplayAll) 
 		{
 			if (nodeInfo != null)
 			{
