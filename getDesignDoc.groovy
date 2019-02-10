@@ -9,86 +9,113 @@ import javax.net.ssl.*
 
 DisplayAll = false // allows us to pretty print all the API calls if necessary
 
+// API call header property
+Authorization = "Authorization"
+
+public class CONFIGS
+{
+    public static final String VERSIONINFOPROP = "versionInfo"
+    public static final String DRAFTPOLICIESINFOPROP = "draftPolicyInfo"
+    public static final String POLICYINFOPROP = "policyInfo"
+    public static final String EXCLUDEPROP = "exclusions"
+    public static final String CHANGEINFOPROP = "changeInfo"
+
+    public static final String MATCHAPP = "APP"
+    public static final int MATCHAPPNO = 0
+    public static final String MATCHAPI = "API"
+    public static final int MATCHAPINO = 1
+    
+    public static final String MATCHTYPEPROP = "matchType"
+    public static final String SINGLEFILEOUTPUTPROP = "useSingleFile"
+    public static final String IDCSPROP = "IDCS"
+    public static final String SERVERPROP = "server"
+    public static final String USERNAMEPROP = "username"
+    public static final String SCOPEPROP = "scope"
+    public static final String TARGETPOLICYNAMEPROP = "TargetPolicy"
+    public static final String DISPLAYPROP = "display"
+
+    public static final String YPROPVAL = "y"
+    public static final String YESPROPVAL = "yes"
+    public static final String TPROPVAL = "t"
+    public static final String TRUEPROPVAL = "true"
+
+
+}
+
+
+public class MD
+{
+// string for printing the output
+    public static final String NL = "\n"
+    public static final String H1 = " #"
+    public static final String H2 = " ##"
+    public static final String H3 = " ###"
+    public static final String LST = " * "
+    public static final String BOLD = "**"
+    public static final String Separator = "  "
+    public static final String Rule = "---" + NL
+    public static final String APIsHeader = "APIs"
+    public static final String APPsHeader = "APPs"
+    public static final String VersionHeader = "Version"
+    public static final String ChangeHeader = " Creation & Amendment"
+    public static final String PolicyHeader = "Policies"
+    public static final String RequestsHeader = "Requests"
+    public static final String ResponsesHeader = "Responses"
+    public static final String CreatedONLabel = "Created On:"
+    public static final String UpdatedONLabel = "Updated On:"
+
+    public static final String VersionNoLabel = "Version No."
+    public static final String StateLabel = "State:"
+    public static final String IterationLabel = "Iteration No:"
+
+    public static final String PolicyTypeLabel = "Policy:"
+
+    public static final String NOREQUESTTODISPLAY = "-- No Requests to Display --"
+    public static final String NORESPONSETODISPLAY = "-- No Responses to Display --"
+
+    public static final String noDescription = " -- No Description Available --"
+    public static final String FilePostfix = ".md"
+    public static final String DefaultFileName = "APIDoc"
+    public static final String AppRef = "references.applications"
+}
+
 // if defaults are set then calling with the default values will attempted
 def String uname = null
 def String password = null
-//def String svr = "https://130.162.67.188"
 def String svr = null
 
 DisplayHelp = "-h"
 
-DisplayAllCLI = "-d"
+MatchType = CONFIGS.MATCHAPINO
 
-MATCHAPP = "APP"
-MATCHAPPNO = 0
-MATCHAPI = "API"
-MATCHAPINO = 1
-MatchType = MATCHAPINO
-MatchTypeParam = "-m"
-
-MatchNameParam = "-n"
 TargetName = null
-DefaultFileName = "APIDoc"
-def String SingleFileName = DefaultFileName
-FileNameParam = "-f"
+
+SingleFileName = MD.DefaultFileName
 // default to true so theat the finemae in the API NAME
 // if the -f option is used then this goes to false and SingleFileName is set
 def boolean MultiFile = true
 
-// switches to tailor info logged
+// these flags define what information gets written
 IncludeChangeInfo = true
-ChangeInfoCLIParam = "CHANGEINFO"
 IncludeVersionInfo = true
-VersionInfoCLIParam = "VERSIONINFO"
 IncludePolicyInfo = true
-PolicyInfoCLIParam = "POLICYINFO"
 IncludeAppInfo = true
 IncludeDraftPoliciesInfo = true
 CheckForExclusion = false
-ExclusionInfoCLIParam = "EXCLUDE"
-COMMENTEXCLUDETEXT="EXCLUDE"
 
-StopDocParam = "-s"
+COMMENTEXCLUDETEXT = "EXCLUDE"
 
-// API call header property
-Authorization = "Authorization"
+idcs = null
+scope = null
 
 
-// string for printing the output
-NL = "\n"
-H1 = " #"
-H2 = " ##"
-H3 = " ###"
-LST = " * "
-Bold = "**"
-Separator = "  "
-Rule = "---" + NL
-APIsHeader = "APIs"
-APPsHeader = "APPs"
-VersionHeader = "Version"
-ChangeHeader = " Creation & Amendment"
-PolicyHeader =  "Policies"
-RequestsHeader = "Requests"
-ResponsesHeader = "Responses"
-CreatedOn = "Created On:"
-UpdatedOn = "Updated On:"
-CreatedONLabel =  CreatedOn
-UpdatedONLabel = UpdatedOn
+final String PROPFILENAMEDEFAULT = 'tool.properties'
 
-VersionNoLabel = "Version No."
-StateLabel = "State:"
-IteratioNLabel = "Iteration No:"
 
-PolicyTypeLabel = "Policy:"
-
-NOREQUESTTODISPLAY = "-- No Requests to Display --"
-NORESPONSETODISPLAY = "-- No Responses to Display --"
-
-noDescription = " -- No Description Available --"
-FilePostfix = ".md"
-
-AppRef = "references.applications"
-
+String propFilename = PROPFILENAMEDEFAULT
+Properties props = null
+File propFile = null
+ConfigObject config = null
 
 
 // certificate by pass ====================
@@ -96,643 +123,778 @@ AppRef = "references.applications"
 
 class OverideHostnameVerifier implements HostnameVerifier
 {
-	boolean verify(String hostname,
-		SSLSession session)
-		{return true}
-	}
+    boolean verify(String hostname,
+                   SSLSession session)
+    { return true }
+}
 
-	class TrustManager implements X509TrustManager
-	{
+class TrustManager implements X509TrustManager
+{
 
-		public java.security.cert.X509Certificate[] getAcceptedIssuers()
-		{
-			return null;
-		}
+    public java.security.cert.X509Certificate[] getAcceptedIssuers()
+    {
+        return null
+    }
 
-		public void checkClientTrusted(
-			java.security.cert.X509Certificate[] certs, String authType)
-			{
-			}
+    public void checkClientTrusted(
+            java.security.cert.X509Certificate[] certs, String authType)
+    {
+    }
 
-			public void checkServerTrusted(
-				java.security.cert.X509Certificate[] certs, String authType) {	}
-			}
+    public void checkServerTrusted(
+            java.security.cert.X509Certificate[] certs, String authType)
+    {}
+}
 
-			TrustManager[] trustAllCerts = new TrustManager[1]
+TrustManager[] trustAllCerts = new TrustManager[1]
 
-			trustAllCerts[0] = new TrustManager()
+trustAllCerts[0] = new TrustManager()
 
-			// ================================================================
+// ================================================================
 
 
-			// this function takes a json object containing the known APIs and
-			// evaluates the API details to see if they match. If they MATCHED
-			// if successful add it to the list provided and return trhe amended list
-			ArrayList matchAPIName (Object apiData, ArrayList apis, String name, String apiDataURL)
-			{
-				if (DisplayAll) {	println ("evaluating >" + name + "< against vanity name>" + apiData.vanityName + "< and internal name >" +  apiData.name +"<")}
+// this function takes a json object containing the known APIs and
+// evaluates the API details to see if they match. If they MATCHED
+// if successful add it to the list provided and return trhe amended list
+ArrayList matchAPIName(Object apiData, ArrayList apis, String name, String apiDataURL)
+{
+    if (DisplayAll)
+    {
+        println("evaluating >" + name + "< against vanity name>" + apiData.vanityName + "< and internal name >" + apiData.name + "<")
+    }
 
-				// if we dont have a match value then we just add it to the list
-				if (name != null)
-				{
-					// if the name isn't null then we can eval the contains path.  If the name cant evaluate then try the vanity name
-					if (((apiData.name != null) && (apiData.name.contains(name))) ||
-					((apiData.vanityName != null) && (apiData.vanityName.contains(name))))
-					{
-						apis.add (apiDataURL)
-						if (DisplayAll)
-						{
-							println ("Matched API " + apiData.name + " --> " + apiData.vanityName)
-						}
-					}
-				}
-				else
-				{
-					apis.add (apiDataURL);
-					if (DisplayAll)
-					{
-						println ("Matched API " + apiData.name + " --> " + apiData.vanityName)
-					}
-				}
-				return apis
-			}
+    // if we dont have a match value then we just add it to the list
+    if (name != null)
+    {
+        // if the name isn't null then we can eval the contains path.  If the name cant evaluate then try the vanity name
+        if (((apiData.name != null) && (apiData.name.contains(name))) ||
+            ((apiData.vanityName != null) && (apiData.vanityName.contains(name))))
+        {
+            apis.add(apiDataURL)
+            if (DisplayAll)
+            {
+                println("Matched API " + apiData.name + " --> " + apiData.vanityName)
+            }
+        }
+    }
+    else
+    {
+        apis.add(apiDataURL);
+        if (DisplayAll)
+        {
+            println("Matched API " + apiData.name + " --> " + apiData.vanityName)
+        }
+    }
+    return apis
+}
 
-			// look to match against App names
-			ArrayList matchAppName (Object apiData, ArrayList apis, String name,  String apiDataURL)
-			{
-				try
-				{
-					if (apiData.links != null)
-					{
-						for (apiRefCtr = 0; apiRefCtr < apiData.links.size(); apiRefCtr++)
-						{
-							// the reference links to an Applicaiton - so record the association
-							if (apiData.links[apiRefCtr].rel.equals(AppRef))
-							{
-								if (DisplayAll) {println ("Found APP ref for " + apiData.name)}
-								def app = new URL(apiData.links[apiRefCtr].href).openConnection()
-								app.setRequestProperty(Authorization, authString)
-								def appData = new JsonSlurper().parse(app.getInputStream())
-								// if there is no match name we add everything to the list
-								if ((appData.items != null) && (appData.items[0] != null) && (appData.items[0].name != null))
-								{
-									if ((name == null) || (appData.items[0].name.contains(name)))
-									{
-										apis.add (apiDataURL);
-										if (DisplayAll)
-										{
-											println ("MATCHED App name:" + appData.items[0].name + " with " + name)
-										}
+// look to match against App names
+ArrayList matchAppName(Object apiData, ArrayList apis, String name, String apiDataURL)
+{
+    try
+    {
+        if (apiData.links != null)
+        {
+            for (apiRefCtr = 0; apiRefCtr < apiData.links.size(); apiRefCtr++)
+            {
+                // the reference links to an Applicaiton - so record the association
+                if (apiData.links[apiRefCtr].rel.equals(AppRef))
+                {
+                    if (DisplayAll)
+                    {
+                        println("Found APP ref for " + apiData.name)
+                    }
+                    def app = new URL(apiData.links[apiRefCtr].href).openConnection()
+                    app.setRequestProperty(Authorization, authString)
+                    def appData = new JsonSlurper().parse(app.getInputStream())
+                    // if there is no match name we add everything to the list
+                    if ((appData.items != null) && (appData.items[0] != null) && (appData.items[0].name != null))
+                    {
+                        if ((name == null) || (appData.items[0].name.contains(name)))
+                        {
+                            apis.add(apiDataURL);
+                            if (DisplayAll)
+                            {
+                                println("MATCHED App name:" + appData.items[0].name + " with " + name)
+                            }
 
-									}
-									else
-									{
-										if (DisplayAll)
-										{
-											println ("NOT matched App name: " + appData.items[0].name)
-										}
-									}
-								}
-							}
-					}
-				}
-				else
-				{
-					println ("Found no links ref for " + apiData.name )
-				}
-			}
-			catch (FileNotFoundException err)
-			{
-				if (DisplayAll)
-				{
-					println ("No URL for " + err.getMessage())
-				}
-			}
+                        }
+                        else
+                        {
+                            if (DisplayAll)
+                            {
+                                println("NOT matched App name: " + appData.items[0].name)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            println("Found no links ref for " + apiData.name)
+        }
+    }
+    catch (FileNotFoundException err)
+    {
+        if (DisplayAll)
+        {
+            println("No URL for " + err.getMessage())
+        }
+    }
 
-			return apis
-		}
+    return apis
+}
 
 // evaluate how to process the policies and then build output display
-StringBuffer processPolicies (Object apiData, StringBuffer sb, HashMap policyMetadata)
+StringBuffer processPolicies(Object apiData, StringBuffer sb, HashMap policyMetadata)
 {
-	Boolean addHeader = true
-	HashMap policyTexts = new HashMap();
+    //boolean addHeader = true
+    HashMap policyTexts = new HashMap()
 
-	for (policyCtr = 0; policyCtr < apiData.implementation.policies.size(); policyCtr++)
-	{
-		StringBuffer line = new StringBuffer()
-		// if the policy is a draft and drafts are accepted or not a draft
-		if (((IncludeDraftPoliciesInfo) && (apiData.implementation.policies[policyCtr].draft == true)) ||
-		(apiData.implementation.policies[policyCtr].draft != true))
-		{
-			// has the policy entry got a defined type - it should have
-			if (apiData.implementation.policies[policyCtr].type != null)
-			{
-				if (DisplayAll) { println (NL+"policy to evaluate :" +new JsonBuilder( apiData.implementation.policies[policyCtr]).toPrettyString()) }
+    for (policyCtr = 0; policyCtr < apiData.implementation.policies.size(); policyCtr++)
+    {
+        StringBuffer line = new StringBuffer()
+        // if the policy is a draft and drafts are accepted or not a draft
+        if (((IncludeDraftPoliciesInfo) && (apiData.implementation.policies[policyCtr].draft == true)) ||
+            (apiData.implementation.policies[policyCtr].draft != true))
+        {
+            // has the policy entry got a defined type - it should have
+            if (apiData.implementation.policies[policyCtr].type != null)
+            {
+                if (DisplayAll)
+                {
+                    println(MD.NL + "policy to evaluate :" + new JsonBuilder(
+                            apiData.implementation.policies[policyCtr]).
+                            toPrettyString())
+                }
 
-				def policyMetadataEntry = policyMetadata.get(apiData.implementation.policies[policyCtr].type)
+                def policyMetadataEntry = policyMetadata.get(apiData.implementation.policies[policyCtr].type)
 
-				line.append (Bold + PolicyTypeLabel + Bold + policyMetadataEntry.name)
-				def String policyDescription = null
+                line.append(MD.BOLD + MD.PolicyTypeLabel + MD.BOLD + policyMetadataEntry.name)
+                String policyDescription = null
 
-				// get the description if there isnt a specific one for this policy instance, retrieve the policy standard definition
-				policyDescription = apiData.implementation.policies[policyCtr].comments
-				if (policyDescription != null)
-				{
-					policyDescription = policyDescription.trim()
+                // get the description if there isnt a specific one for this policy instance, retrieve the policy standard definition
+                policyDescription = apiData.implementation.policies[policyCtr].comments
+                if (policyDescription != null)
+                {
+                    policyDescription = policyDescription.trim()
 
-				}
+                }
 
-				if (policyMetadataEntry != null)
-				{
-					if ((policyDescription == null) || (policyDescription.length() == 0))
-					{
-						policyDescription = policyMetadataEntry.description
-						if (DisplayAll) {println ("getting policy description from the cached metadata - "+policyMetadataEntry.description)}
-					}
-				}
+                if (policyMetadataEntry != null)
+                {
+                    if ((policyDescription == null) || (policyDescription.length() == 0))
+                    {
+                        policyDescription = policyMetadataEntry.description
+                        if (DisplayAll)
+                        {
+                            println("getting policy description from the cached metadata - " + policyMetadataEntry.description)
+                        }
+                    }
+                }
 
-				// devaluate and action exclusion if set
-				if ((policyDescription != null) &&
-					CheckForExclusion &&
-					(policyDescription.endsWith(COMMENTEXCLUDETEXT)))
-				{
-					if (DisplayAll){println ("Applying exclusion to " + policyMetadataEntry.name)}
-						// instruction to exclude this policy has been allocated
-						policyDescription = null
-						line = null
-				}
+                // evaluate and action exclusion if set
+                if ((policyDescription != null) &&
+                    CheckForExclusion &&
+                    (policyDescription.endsWith(COMMENTEXCLUDETEXT)))
+                {
+                    if (DisplayAll)
+                    {
+                        println("Applying exclusion to " + policyMetadataEntry.name)
+                    }
+                    // instruction to exclude this policy has been allocated
+                    policyDescription = null
+                    line = null
+                }
 
-				if (policyDescription != null)
-				{
-					line.append ( " : " + policyDescription + NL)
-				}
-				if (line != null)
-				{
-					line.append (NL)
-				}
-				if (DisplayAll) { println ("policy info:" +new JsonBuilder(apiData.implementation.policies[policyCtr]).toPrettyString()+NL+NL) }
-			}
-		}
-		policyTexts.put (apiData.implementation.policies[policyCtr].id, line)
-	}
+                if (policyDescription != null)
+                {
+                    line.append(" : " + policyDescription + MD.NL)
+                }
+                if (line != null)
+                {
+                    line.append(MD.NL)
+                }
+                if (DisplayAll)
+                {
+                    println("policy info:" + new JsonBuilder(apiData.implementation.policies[policyCtr]).
+                            toPrettyString() + MD.NL + MD.NL)
+                }
+            }
+        }
+        policyTexts.put(apiData.implementation.policies[policyCtr].id, line)
+    }
 
 
-	sb.append(H2 + " " + PolicyHeader + NL)
-	sb.append (H3+RequestsHeader + NL)
-	int lineCount = 0;
-	for (requestCtr = 0; requestCtr < apiData.implementation.executions.request.size(); requestCtr++)
-	{
-		requestLine = policyTexts.get(apiData.implementation.executions.request[requestCtr])
-		if (requestLine != null)
-		{
-			sb.append (requestLine)
-			lineCount++
-		}
-	}
+    sb.append(MD.H2 + MD.Separator + MD.PolicyHeader + MD.NL)
+    sb.append(MD.H3 + MD.Separator + MD.RequestsHeader + MD.NL)
+    int lineCount = 0;
+    for (requestCtr = 0; requestCtr < apiData.implementation.executions.request.size(); requestCtr++)
+    {
+        requestLine = policyTexts.get(apiData.implementation.executions.request[requestCtr])
+        if (requestLine != null)
+        {
+            sb.append(requestLine)
+            lineCount++
+        }
+    }
 
-	if (lineCount == 0)
-	{
-		sb.append (NOREQUESTTODISPLAY)
-	}
+    if (lineCount == 0)
+    {
+        sb.append(MD.NOREQUESTTODISPLAY)
+    }
 
-	sb.append (H3+ResponsesHeader + NL)
-	lineCount = 0
-	for (responseCtr = 0; responseCtr < apiData.implementation.executions.response.size(); responseCtr++)
-	{
-		responseLine = policyTexts.get(apiData.implementation.executions.response[responseCtr])
-		if (responseLine != null)
-		{
-	  	sb.append (responseLine)
-			lineCount++
-		}
-	}
-	if (lineCount == 0)
-	{
-		sb.append (NORESPONSETODISPLAY)
-	}
+    sb.append(MD.H3 + MD.Separator + MD.ResponsesHeader + MD.NL)
+    lineCount = 0
+    for (responseCtr = 0; responseCtr < apiData.implementation.executions.response.size(); responseCtr++)
+    {
+        responseLine = policyTexts.get(apiData.implementation.executions.response[responseCtr])
+        if (responseLine != null)
+        {
+            sb.append(responseLine)
+            lineCount++
+        }
+    }
+    if (lineCount == 0)
+    {
+        sb.append(MD.NORESPONSETODISPLAY)
+    }
 
-	return sb
+    return sb
 }
 
 
 // put together the description of the policies
-StringBuffer processAppDetails (StringBuffer sb, Object appObj, HashMap appDescCache, String svr, String authString)
+StringBuffer processAppDetails(StringBuffer sb, Object appObj, HashMap appDescCache, String svr, String authString)
 {
-	sb.append (H2 + " " + APPsHeader + NL)
-	sb.append  (appObj.items[0].name)
-	def String description = null
+    sb.append(MD.H2 + MD.Separator + MD.APPsHeader + MD.NL)
+    sb.append(appObj.items[0].name)
+    String description = null
 
-	// get the app Description
-	if (appDescCache.containsKey(appObj.items[0].id))
-	{
-		// have the description cached use that
-		description = appDescCache.get(appObj.items[0].id)
-		if (DisplayAll) { println ("used description cache")}
-	}
-	else
-	{
-		// need to go look up the descriptions
-		def appdescURL = new URL(svr + "/apiplatform/management/v1/applications/"+ appObj.items[0].id).openConnection()
-		appdescURL.setRequestProperty(Authorization, authString)
-		def appDescObj = new JsonSlurper().parse(appdescURL.getInputStream())
-		description = appDescObj.description
-		appDescCache.put ( appObj.items[0].id, description)
-		if (DisplayAll)
-		{
-			println ("looked up description")
-		  println (new JsonBuilder(appDescObj).toPrettyString())
-		}
-	}
+    // get the app Description
+    if (appDescCache.containsKey(appObj.items[0].id))
+    {
+        // have the description cached use that
+        description = appDescCache.get(appObj.items[0].id)
+        if (DisplayAll)
+        {
+            println("used description cache")
+        }
+    }
+    else
+    {
+        // need to go look up the descriptions
+        def appdescURL = new URL(svr + "/apiplatform/management/v1/applications/" + appObj.items[0].id).openConnection()
+        appdescURL.setRequestProperty(Authorization, authString)
+        def appDescObj = new JsonSlurper().parse(appdescURL.getInputStream())
+        description = appDescObj.description
+        appDescCache.put(appObj.items[0].id, description)
+        if (DisplayAll)
+        {
+            println("looked up description")
+            println(new JsonBuilder(appDescObj).toPrettyString())
+        }
+    }
 
-	// have I managed to obtain a meaningful description text
-	if ((description != null) && (description.length() > 0))
-	{
-		sb.append( ": "+description + NL)
-	}
+    // have I managed to obtain a meaningful description text
+    if ((description != null) && (description.length() > 0))
+    {
+        sb.append(": " + description + MD.NL)
+    }
 
-	return sb
+    return sb
 }
 
 void DisplayHelp()
 {
-	println ("================================================\nHelp:\n")
-	println ("Mandatory to provide server-url username password e.g. https://1.2.3.4/ me myPassword\n")
-	println ("Without these parameters the app will stop\n")
-	println ("optional parameters:")
-	println (DisplayAllCLI+" == displays all the activity information")
-	println (DisplayHelp+" == this information")
-	println (MatchNameParam + " <string> == used to apply a filter on the app or API name,\nif nothing set then all APIs are included")
-	println ("If the string contains spaces then this can be addressed by wrapping \nwith double quotes e.g. \"my multipart name\"")
-	println (MatchTypeParam + " <"+MATCHAPI+"|"+MATCHAPP+"> == apply the name filter to API names or App names, default is API")
-	println (FileNameParam+" <filename> == target the output to a single file, \nif not set each API is written to its own file")
-	println (StopDocParam+" <"+ChangeInfoCLIParam+"|"+VersionInfoCLIParam+"|"+PolicyInfoCLIParam+"|"+ExclusionInfoCLIParam+"> == stop the sections being included, \nmultiple elements can be included by comma separating without space characters")
-	println ("the "+ExclusionInfoCLIParam+ " is a special case as it looks in the policy comment to see if ends with " + COMMENTEXCLUDETEXT + " \nif present, that policy is excluded from the output")
-	println ("")
-	println ("All commands are case sensitive")
-	println ("Tool doc at: http://blog.mp3monster.org/2018/05/18/documenting-apis-on-the-oracle-api-platform")
-	println ("================================================\n")
-	System.exit(0)
+    String recognizedValues = " - " + CONFIGS.YPROPVAL + "|" + CONFIGS.YESPROPVAL + "|" + CONFIGS.TPROPVAL + "|" + CONFIGS.TRUEPROPVAL + "\n"
+    println("================================================\nHelp:\n" +
+            "Requires command line parameters are:\n" +
+            "   password \n" +
+            "   properties file\n" +
+            "If being used with a managed API Platform then additionally:\n" +
+            "  Client Id and \n" +
+            "  Client Secret need to be provided\n" +
+            "Without these parameters the app will stop\n" +
+            "The following values are taken from the configuration file:\n" +
+            "   " + CONFIGS.SERVERPROP + " -- The API management platform \n" +
+            "   " + CONFIGS.USERNAMEPROP + " -- username to authenticate with into the API Platform\n" +
+            "   " + CONFIGS.IDCSPROP + " -- URL to the token service in IDCS (only required for managed API Platform)\n" +
+            "   " + CONFIGS.SCOPEPROP + " -- IDCS scope value (only required for managed API Platform)\n" +
+            "   " + CONFIGS.TARGETPOLICYNAMEPROP + " -- can contain part of a policy name - to filter the processed policies\n" +
+            "   " + CONFIGS.MATCHTYPEPROP + " -- to define the match against an application or API the value musty be - " + CONFIGS.MATCHAPP + "|" + CONFIGS.MATCHAPI + "\n" +
+            "   " + CONFIGS.POLICYINFOPROP + " -- to include policy information value must be one of " + recognizedValues +
+            "   " + CONFIGS.DRAFTPOLICIESINFOPROP + " -- to include draft policy information value must be one of " + recognizedValues +
+            "   " + CONFIGS.EXCLUDEPROP + " -- to observe the EXCLUDE indicator must be one of " + recognizedValues +
+            "   " + CONFIGS.CHANGEINFOPROP + " -- to include details of when the policy was changed, value must be one of " + recognizedValues +
+            "   " + CONFIGS.VERSIONINFOPROP + " -- to include version information this must be one of " + recognizedValues +
+            "   " + CONFIGS.SINGLEFILEOUTPUTPROP + " -- to send all API docs to the same file, the value must be the " +
+            "name of the output file" +
+            " "  +
+            "   " + CONFIGS.DISPLAYPROP + " -- to enable diagnostic information the value needs to be one of " + recognizedValues +
+            "\nTool doc at: http://blog.mp3monster.org/2018/05/18/documenting-apis-on-the-oracle-api-platform\n")
+    println("================================================\n")
+    System.exit(0)
 }
 
-		//===============
 
- 	// handle CLI
-	if (DisplayAll) {println ("at CLI with " + args.size() + " args\n" + args.toString())}
-	if (args.size() > 0)
-	{
-		try
-		{
-			if (args.size() < 3 || (args[0] == DisplayHelp))
-			{
-				DisplayHelp()
-			}
-			svr = args [0]
-			uname = args[1]
-			password = args [2]
+// as we need to process a number of config values the same way - this provides the standardised logic
+boolean getConfigState(ConfigObject config, String property, boolean defaultVal)
+{
+    boolean set = defaultVal
 
-			if (DisplayAll) {println ("svr="+svr + "\nusername ="+uname+"\nPassword =" + password)}
+    String valStr = config.get(property)
+    if (valStr != null)
+    {
+        if ((valStr.equalsIgnoreCase(CONFIGS.YPROPVAL) ||
+             valStr.equalsIgnoreCase(CONFIGS.YESPROPVAL) ||
+             valStr.equalsIgnoreCase(CONFIGS.TPROPVAL) ||
+             valStr.equalsIgnoreCase(CONFIGS.TRUEPROPVAL)))
+        {
+            set = true
+        }
+        else
+        {
+            set = false
+        }
+    }
 
-			def idx = 3
-			while (idx < args.size())
-			switch (args[idx])
-			{
-				case FileNameParam :
-				if (args.size() > idx+1)
-				{
-					idx = idx+1
-					SingleFileName = args[idx]
-					SingleFileName.trim()
-
-					if (SingleFileName.length() == 0 )
-					{
-						println ("Malformed filename parameter")
-						SingleFileName = DefaultFileName + FilePostfix
-					}
-					else
-					{
-						// its a legitimate filename - so switch on single file
-						if (DisplayAll){"Single file target, filename is  " + SingleFileName}
-						MultiFile = false
-						idx++
-					}
-				}
-				break
-
-				case MatchTypeParam :
-					String matchCommand = null
-					idx++
-					if (args.size() >= idx)
-					{
-						matchCommand = args[idx]
-						matchCommand = matchCommand.toUpperCase()
-						idx++
-					}
-					if (matchCommand == MATCHAPP)
-					{
-						MatchType = MATCHAPPNO
-						if (DisplayAll)	{println ("Matching for App names")}
-					}
-					else if (matchCommand == MATCHAPI)
-					{
-						MatchType = MATCHAPINO
-						if (DisplayAll)	{println ("Matching for API names explicitly set")}
-					}
-					else
-					{
-						if (DisplayAll)	{println ("didn't understand match type param:" + matchCommand + " disreguarding")}
-						MatchType = MATCHAPINO
-					}
-					break
-
-				case MatchNameParam :
-					idx++
-					if (args.size() >= idx)
-					{
-						TargetName = args[idx]
-						if (DisplayAll)	{println ("Matching against " + TargetName)}
-
-						idx++
-					}
-					else
-					{
-						if (DisplayAll){println ("No name provided as a filter")}
-					}
-					break
-
-				case DisplayAllCLI:
-					DisplayAll = true
-					println ("Display All Enabled")
-					idx++
-					break
-
-				case DisplayHelp:
-					DisplayHelp()
-					idx++
-					System.exit(0)
-					break
-
-				case StopDocParam:
-					def String elementsParam = null
-					idx++
-					if (args.size() >= idx)
-					{
-						elements = args[idx]
-						elements = elements.toUpperCase()
-						def List elements = elements.tokenize(',')
-						for (listIdx =0; listIdx < elements.size(); listIdx++)
-						{
-							switch (elements[listIdx])
-							{
-								case VersionInfoCLIParam:
-								IncludeVersionInfo = false
-								if (DisplayAll) {println ("Version Info now OFF")}
-								break
-
-								case PolicyInfoCLIParam:
-								IncludePolicyInfo = false
-								if (DisplayAll) {println ("Policy Info now OFF")}
-								break
-
-								case ChangeInfoCLIParam:
-								IncludeChangeInfo = false
-								if (DisplayAll) {println ("Change Info now OFF")}
-								break
-
-								case ExclusionInfoCLIParam:
-								CheckForExclusion = true
-								if (DisplayAll) {println ("checking for exclusion tag in descriptions")}
-								break
-
-								default:
-								if (DisplayAll) {println ("Don't recognize " + elements[listIdx] + " ignoring")}
-							}
-						}
-						idx++
-					}
-				break
-
-				default:
-				println ("Unknown parameter - "+args[idx])
-				idx++
-			}
-		}
-		catch (Exception err)
-		{
-			if (DisplayAll)
-			{
-				println (err.getMessage())
-		  	err.printStackTrace()
-		  }
-			println ("Error 1")
-		  DisplayHelp()
-			System.exit(0)
-		}
-	}
-	else
-	{
-		DisplayHelp()
-	}
-
-	// verify all the parameters
-	try
-	{
-		assert (uname.size() > 0) : "No username"
-		assert (password.size() > 0) : "No password"
-		assert (svr.size() > 0) : "No server"
-	}
-	catch (Exception err)
-	{
-		println (err.getMessage()  + "\n")
-		println ("Error 2")
-		if (DisplayAll) {	err.printStackTrace()}
-		DisplayHelp()
-		System.exit(0)
-	}
-
-		// main
-
-		def HashMap policyMetadata = new HashMap();
-		def ArrayList apis = new ArrayList() // k=api.id, v=https://docs.oracle.com/en/cloud/paas/api-platform-cloud/apfrm/op-apis-%7BapiId%7D-get.html
-
-		// setup password string
-		final String authStringPlain = uname+":"+password
-		final authString = "Basic " + (authStringPlain.getBytes().encodeBase64().toString())
-		// configure HTTP connectivity inc ignoring certificate validation
-		SSLContext sc = SSLContext.getInstance("SSL");
-		sc.init(null, trustAllCerts, new java.security.SecureRandom());
-		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-		HttpsURLConnection.setDefaultHostnameVerifier((HostnameVerifier)new OverideHostnameVerifier());
+    return set
+}
+//===============
 
 
+// handle CLI
+if (DisplayAll)
+{
+    println("at CLI with " + args.size() + " args\n" + args.toString())
+}
 
-		try
-		{
-			// get policy metadata
-			def callPoliciesMetadata = new URL(svr+"/apiplatform/management/v1/policies/metadata").openConnection()
-			callPoliciesMetadata.setRequestProperty(Authorization, authString)
-			def jsonPolicyMetaList = new JsonSlurper().parse(callPoliciesMetadata.getInputStream())
-			if (DisplayAll) {
-				println ("****** policy meta data *****")
-				println (new JsonBuilder(jsonPolicyMetaList).toPrettyString())
-				println ("*****************************")
-			}
+props = new Properties();
+propFile = new File(propFilename);
+props.load(propFile.newDataInputStream())
+config = new ConfigSlurper().parse(props)
+
+println("1")
+
+svr = config.get(CONFIGS.SERVERPROP)
+uname = config.get(CONFIGS.USERNAMEPROP)
+DisplayAll = getConfigState(config, CONFIGS.DISPLAYPROP, false)
+IncludeVersionInfo = getConfigState(config, CONFIGS.VERSIONINFOPROP, false)
+IncludeChangeInfo = getConfigState(config, CONFIGS.CHANGEINFOPROP, false)
+IncludePolicyInfo = getConfigState(config, CONFIGS.POLICYINFOPROP, false)
+CheckForExclusion = getConfigState(config, CONFIGS.EXCLUDEPROP, false)
+IncludeDraftPoliciesInfo = getConfigState(config, CONFIGS.DRAFTPOLICIESINFOPROP, false)
+
+println("5")
+
+idcs = config.get(CONFIGS.IDCSPROP)
+scope = config.get(CONFIGS.SCOPEPROP)
+TargetName = config.get(CONFIGS.TARGETPOLICYNAMEPROP)
+useIDCS = ((idcs != null) && (idcs.size() > 0))
 
 
-			for (policyMetaIdx=0; policyMetaIdx < jsonPolicyMetaList.count; policyMetaIdx++)
-			{
-				policyMetadata.put (jsonPolicyMetaList.items[policyMetaIdx].type, jsonPolicyMetaList.items[policyMetaIdx])
-			}
+SingleFileName = config.get(CONFIGS.SINGLEFILEOUTPUTPROP)
+if (SingleFileName != null)
+{
+    SingleFileName.trim()
 
-			// get the API list and then iterate through pulling the API information - record the API info into a map
-			def listAPIs = new URL(svr+"/apiplatform/management/v1/apis").openConnection()
-			listAPIs.setRequestProperty(Authorization, authString)
-			def listAPIData = new JsonSlurper().parse(listAPIs.getInputStream())
+    if (SingleFileName.length() == 0)
+    {
+        println("Malformed filename parameter")
+        SingleFileName = DefaultFileName + FilePostfix
+    }
+    else
+    {
+        // its a legitimate filename - so switch on single file
+        if (DisplayAll)
+        {
+            "Single file target, filename is  " + SingleFileName
+        }
+        MultiFile = false
+    }
+}
+else
+{
+    MultiFile = true
+
+}
+
+String matchCommand = config.get(CONFIGS.MATCHTYPEPROP)
+MatchType = CONFIGS.MATCHAPINO
+if (matchCommand != null)
+{
+    matchCommand = matchCommand.toUpperCase().trim()
+}
+if (matchCommand == CONFIGS.MATCHAPP)
+{
+    MatchType = CONFIGS.MATCHAPPNO
+    if (DisplayAll)
+    {
+        println("Matching for App names")
+    }
+}
+else if (matchCommand == CONFIGS.MATCHAPI)
+{
+    MatchType = CONFIGS.MATCHAPINO
+    if (DisplayAll)
+    {
+        println("Matching for API names explicitly set")
+    }
+}
+
+if (DisplayAll)
+{
+    println("Match Type set to" + matchCommand)
+}
 
 
-			for (idx = 0; idx <  listAPIData.count; idx++)
-			{
-				def apiDataURL = svr + "/apiplatform/management/v1/apis/" + listAPIData.items[idx].id
-				if (DisplayAll){println ("requesting : " + apiDataURL)}
-				def api = new URL(apiDataURL).openConnection()
-				api.setRequestProperty(Authorization, authString)
-				def apiData = new JsonSlurper().parse(api.getInputStream())
+if (args.size() > 0)
+{
+    try
+    {
+        if (args.size() > 0)
+        {
+            if (args[0] == DisplayHelp)
+            {
+                DisplayHelp()
+                System.exit(0)
+            }
+            else
+            {
+                password = args[0]
+                propertiesFile = args[1]
+            }
 
-				switch (MatchType)
-				{
-					case MATCHAPINO:
-						apis = matchAPIName (apiData, apis, TargetName, apiDataURL)
-						break
+            if (args.size() > 2)
+            {
+                clientId = args[2]
+                clientSecret = args[3]
+            }
+        }
+    }
+    catch (Exception err)
+    {
+        if (DisplayAll)
+        {
+            println(err.getMessage())
+            err.printStackTrace()
+        }
+        DisplayHelp()
+        System.exit(0)
+    }
+}
+else
+{
+    DisplayHelp()
+    System.exit(0)
+}
 
-					case MATCHAPPNO:
-						apis = matchAppName (apiData, apis, TargetName, apiDataURL)
-						break
+// verify all the parameters
+try
+{
+    assert (uname.size() > 0): "No username"
+    assert (password.size() > 0): "No password"
+    assert (svr.size() > 0): "No server"
+}
+catch (Exception err)
+{
+    println(err.getMessage() + "\n")
+    println("Error 2")
+    if (DisplayAll)
+    {
+        err.printStackTrace()
+    }
+    DisplayHelp()
+    System.exit(0)
+}
 
-					default:
-					 if (DisplayAll) {println ("Unknown match type! :" + MatchType)}
-				}
-			}
-		}
-		catch (Exception excep)
-		{
-			if (DisplayAll)
-			{
-				excep.printStackTrace()
-			}
-		}
+// main
 
-		if (DisplayAll)
-		{
-			println ("======================================")
-			println ("generating docs for " + apis.size() + " APIs")
-		}
-		def String fileName = null
-		def HashMap appDescCache = new HashMap()
-		// cache the app descriptions so we dont keep having to look it up
-		def File file = null
-		if (!MultiFile)
-		{
-			fileName = SingleFileName+FilePostfix
-			if	(DisplayAll) {println ("Single File Output to " + fileName)}
-			file = new File(fileName)
-			if (file.exists())
-			{
-				file.delete()
-			  //println ("deleted old version of " + filename)
-			}
-			file.createNewFile()
-		}
-			// we have not been through all the apis noted their meta data and then allocated them to the unassigned list OR linked them to an app
-		for (apiCtr = 0; apiCtr < apis.size(); apiCtr++)
-		{
-			StringBuffer sb = new StringBuffer()
-			try
-			{
-				def api = new URL(apis[apiCtr]).openConnection()
-				api.setRequestProperty(Authorization, authString)
-				def apiData = new JsonSlurper().parse(api.getInputStream())
+def HashMap policyMetadata = new HashMap();
+def ArrayList apis = new ArrayList() // k=api.id, v=https://docs.oracle.com/en/cloud/paas/api-platform-cloud/apfrm/op-apis-%7BapiId%7D-get.html
 
-				if (MultiFile)
-				{
-					fileName = apiData.name+FilePostfix
-					file = new File(fileName)
+// setup password string
+// configure HTTP connectivity inc ignoring certificate validation
+SSLContext sc = SSLContext.getInstance("SSL");
+sc.init(null, trustAllCerts, new java.security.SecureRandom());
+HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+HttpsURLConnection.setDefaultHostnameVerifier((HostnameVerifier) new OverideHostnameVerifier());
 
-					if (file.exists())
-					{
-						file.delete()
-					  //println ("deleted old version of " + fileName)
-					}
-					file.createNewFile()
-				}
 
-				sb.append (H1)
-				sb.append(apiData.name + NL)
-				if ((apiData.description != null) && (apiData.description.length() > 0))
-				{
-					sb.append (apiData.description + NL)
-				}
-				else
-				{
-					sb.append (noDescription + NL)
-				}
+if (useIDCS)
+{
+    authString = "Bearer " + getAccessToken(idcs, clientId, clientSecret, uname, password, scope)
+}
+else
+{
+    // setup password string
+    final String authStringPlain = uname + ":" + password
+    authString = "Basic " + (authStringPlain.getBytes().encodeBase64().toString())
 
-				if (IncludeVersionInfo)
-				{
-					if	(DisplayAll) {println ("Including version info for " + apiData.name)}
-					sb.append (H2+ VersionHeader + NL)
-					sb.append (Bold + VersionNoLabel + Bold + apiData.version)
-					sb.append (Separator + Bold + StateLabel + Bold + apiData.state + NL)
-					sb.append (Bold + IteratioNLabel + Bold + apiData.iterationId + NL)
-				}
+}
 
-				if (IncludeChangeInfo)
-				{
-					if	(DisplayAll) {println ("Including change info for " + apiData.name)}
-					sb.append (H3 + ChangeHeader + NL)
-					sb.append (Bold + CreatedONLabel + Bold + apiData.createdAt)
-					sb.append (Separator + Bold + UpdatedONLabel + Bold + apiData.updatedAt + NL)
-				}
+try
+{
+    // get policy metadata
+    def callPoliciesMetadata = new URL(svr + "/apiplatform/management/v1/policies/metadata").openConnection()
+    callPoliciesMetadata.setRequestProperty(Authorization, authString)
+    def jsonPolicyMetaList = new JsonSlurper().parse(callPoliciesMetadata.getInputStream())
+    if (DisplayAll)
+    {
+        println("****** policy meta data *****")
+        println(new JsonBuilder(jsonPolicyMetaList).toPrettyString())
+        println("*****************************")
+    }
 
-				// locate the app info and write
-				if (IncludeAppInfo)
-				{
-					if	(DisplayAll) {println ("Including app info for " + apiData.name)}
-					if (apiData.links != null)
-					{
-						for (linkCtr = 0; linkCtr < apiData.links.size(); linkCtr++)
-						{
-							if (( apiData.links[linkCtr].rel != null) && (apiData.links[linkCtr].rel == AppRef))
-							{
-								def appURL = new URL(apiData.links[linkCtr].href).openConnection()
-								appURL.setRequestProperty(Authorization, authString)
-								def appObj = new JsonSlurper().parse(appURL.getInputStream())
-								if ((appObj.items != null) && (appObj.items[0] != null) &&
-								(appObj.items[0].name != null))
-								{
-									sb = processAppDetails (sb, appObj, appDescCache, svr, authString)
-								}
-							}
-						}
-					}
-				} // end of app info
 
-				if (IncludePolicyInfo)
-				{
-					if	(DisplayAll) {println ("Including policy info for " + apiData.name)}
-						// provide the policy info
-					if (apiData.implementation.policies != null)
-					{
-						sb = processPolicies (apiData, sb, policyMetadata)
-					}
-				}
+    for (policyMetaIdx = 0; policyMetaIdx < jsonPolicyMetaList.count; policyMetaIdx++)
+    {
+        policyMetadata.put(jsonPolicyMetaList.items[policyMetaIdx].type, jsonPolicyMetaList.items[policyMetaIdx])
+    }
 
-			}
-			catch (Exception err)
-			{
-					err.printStackTrace()
-			}
-			if (!MultiFile) {sb.append(NL + Rule)}
-			//println ("Writing to file:"+fileName)
-			if (DisplayAll) {println (sb.toString() + "\n ++++++++++++++++++++++++++++++++++++++++++++++++++++")}
-			file.append(sb.toString())
-	}
+    // get the API list and then iterate through pulling the API information - record the API info into a map
+    def listAPIs = new URL(svr + "/apiplatform/management/v1/apis").openConnection()
+    listAPIs.setRequestProperty(Authorization, authString)
+    def listAPIData = new JsonSlurper().parse(listAPIs.getInputStream())
+
+
+    for (idx = 0; idx < listAPIData.count; idx++)
+    {
+        def apiDataURL = svr + "/apiplatform/management/v1/apis/" + listAPIData.items[idx].id
+        if (DisplayAll)
+        {
+            println("requesting : " + apiDataURL)
+        }
+        def api = new URL(apiDataURL).openConnection()
+        api.setRequestProperty(Authorization, authString)
+        def apiData = new JsonSlurper().parse(api.getInputStream())
+
+        switch (MatchType)
+        {
+            case CONFIGS.MATCHAPINO:
+                apis = matchAPIName(apiData, apis, TargetName, apiDataURL)
+                break
+
+            case CONFIGS.MATCHAPPNO:
+                apis = matchAppName(apiData, apis, TargetName, apiDataURL)
+                break
+
+            default:
+                if (DisplayAll)
+                {
+                    println("Unknown match type! :" + MatchType)
+                }
+        }
+    }
+}
+catch (Exception excep)
+{
+    if (DisplayAll)
+    {
+        excep.printStackTrace()
+    }
+}
+
+if (DisplayAll)
+{
+    println("======================================")
+    println("generating docs for " + apis.size() + " APIs")
+}
+def String fileName = null
+def HashMap appDescCache = new HashMap()
+// cache the app descriptions so we dont keep having to look it up
+def File file = null
+if (!MultiFile)
+{
+    fileName = SingleFileName + MD.FilePostfix
+    if (DisplayAll)
+    {
+        println("Single File Output to " + fileName)
+    }
+    file = new File(fileName)
+    if (file.exists())
+    {
+        file.delete()
+        //println ("deleted old version of " + filename)
+    }
+    file.createNewFile()
+}
+// we have not been through all the apis noted their meta data and then allocated them to the unassigned list OR linked them to an app
+for (apiCtr = 0; apiCtr < apis.size(); apiCtr++)
+{
+    StringBuffer sb = new StringBuffer()
+    try
+    {
+        def api = new URL(apis[apiCtr]).openConnection()
+        api.setRequestProperty(Authorization, authString)
+        def apiData = new JsonSlurper().parse(api.getInputStream())
+
+        if (MultiFile)
+        {
+            fileName = apiData.name + MD.FilePostfix
+            file = new File(fileName)
+
+            if (file.exists())
+            {
+                file.delete()
+                //println ("deleted old version of " + fileName)
+            }
+            file.createNewFile()
+        }
+
+        sb.append(MD.H1 + MD.Separator)
+        sb.append(apiData.name + MD.NL)
+        if ((apiData.description != null) && (apiData.description.length() > 0))
+        {
+            sb.append(apiData.description + MD.NL)
+        }
+        else
+        {
+            sb.append(MD.noDescription + MD.NL)
+        }
+
+        if (IncludeVersionInfo)
+        {
+            if (DisplayAll)
+            {
+                println("Including version info for " + apiData.name)
+            }
+            sb.append(MD.H2 + MD.Separator + MD.VersionHeader + MD.NL)
+            sb.append(MD.BOLD + MD.VersionNoLabel + MD.BOLD + apiData.version)
+            sb.append(MD.Separator + MD.BOLD + MD.StateLabel + MD.BOLD + apiData.state + MD.NL)
+            sb.append(MD.BOLD + MD.IterationLabel + MD.BOLD + apiData.iterationId + MD.NL)
+        }
+
+        if (IncludeChangeInfo)
+        {
+            if (DisplayAll)
+            {
+                println("Including change info for " + apiData.name)
+            }
+            sb.append(MD.H3 + MD.Separator + MD.ChangeHeader + MD.NL)
+            sb.append(MD.BOLD + MD.CreatedONLabel + MD.BOLD + apiData.createdAt)
+            sb.append(MD.Separator + MD.BOLD + MD.UpdatedONLabel + MD.BOLD + apiData.updatedAt + MD.NL)
+        }
+
+        // locate the app info and write
+        if (IncludeAppInfo)
+        {
+            if (DisplayAll)
+            {
+                println("Including app info for " + apiData.name)
+            }
+            if (apiData.links != null)
+            {
+                for (linkCtr = 0; linkCtr < apiData.links.size(); linkCtr++)
+                {
+                    if ((apiData.links[linkCtr].rel != null) && (apiData.links[linkCtr].rel == MD.AppRef))
+                    {
+                        def appURL = new URL(apiData.links[linkCtr].href).openConnection()
+                        appURL.setRequestProperty(Authorization, authString)
+                        def appObj = new JsonSlurper().parse(appURL.getInputStream())
+                        if ((appObj.items != null) && (appObj.items[0] != null) &&
+                            (appObj.items[0].name != null))
+                        {
+                            sb = processAppDetails(sb, appObj, appDescCache, svr, authString)
+                        }
+                    }
+                }
+            }
+        } // end of app info
+
+        if (IncludePolicyInfo)
+        {
+            if (DisplayAll)
+            {
+                println("Including policy info for " + apiData.name)
+            }
+            // provide the policy info
+            if (apiData.implementation.policies != null)
+            {
+                sb = processPolicies(apiData, sb, policyMetadata)
+            }
+        }
+
+    }
+    catch (Exception err)
+    {
+        err.printStackTrace()
+    }
+    if (!MultiFile)
+    {
+        sb.append(MD.NL + Rule)
+    }
+    if (DisplayAll)
+    {
+        println(sb.toString() + "\n ++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    }
+    file.append(sb.toString())
+}
+
+// generates the IDCS access token string
+public String getAccessToken(String idcs, String clientId, String clientSecret, String userName, String password,
+                             String scope)
+{
+    final String ENC = "UTF-8"
+    String accessToken = null
+    String combi = clientId + ":" + clientSecret
+    String authHeader = "Basic " + Base64.getEncoder().encodeToString(combi.getBytes())
+
+    try
+    {
+        URL url = new URL(idcs);
+        HttpsURLConnection con = (HttpsURLConnection) url.openConnection()
+        con.setRequestMethod("POST")
+        con.setRequestProperty(Authorization, authHeader)
+        con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+        con.setRequestProperty("Accept", "application/json")
+        con.setDoOutput(true)
+
+        try
+        {
+            PrintStream os = new PrintStream(con.getOutputStream())
+
+            StringBuilder sb = new StringBuilder("grant_type=password&username=")
+            sb.append(URLEncoder.encode(userName, ENC))
+
+            sb.append("&scope=")
+            sb.append(URLEncoder.encode(scope, ENC))
+
+            sb.append("&password=")
+            sb.append(URLEncoder.encode(password, ENC))
+
+            os.print(sb.toString())
+            os.close()
+        }
+        catch (Exception err)
+        {
+            System.out.println("error trying to produce URL\n" + err.getMessage())
+        }
+
+        if (con.getResponseCode() == HttpURLConnection.HTTP_OK)
+        {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()))
+            String line;
+            StringBuilder access = new StringBuilder()
+            while ((line = reader.readLine()) != null)
+            {
+                access.append(line)
+            }
+
+            def json = new JsonSlurper().parseText(access.toString())
+            accessToken = json.access_token
+        }
+        else
+        {
+            throw new Exception("Oh crap - that didn't go very well -- response = " + con.getResponseCode())
+        }
+    }
+    catch (Exception err)
+    {
+        System.err.println("Err getting token:\n" + err.getMessage())
+    }
+
+    return accessToken
+}
