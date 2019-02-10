@@ -1,0 +1,4 @@
+idcs=https://idcs-xxxxxxx.identity.oraclecloud.com/oauth2/v1/token
+scope=https://xxxxxxx.apiplatform.ocp.oraclecloud.com:443.apiplatform offline_access
+username=me
+#output-file=my.token
