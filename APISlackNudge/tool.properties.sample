@@ -1,0 +1,8 @@
+server=https://primary-ikea.apiplatform.ocp.oraclecloud.com
+#server=https://130.162.65.144
+IDCS=https://idcs-xxxx.identity.oraclecloud.com/oauth2/v1/token
+scope=https://yyyy.apiplatform.ocp.oraclecloud.com:443.apiplatform offline_access
+username=apiweblogic
+display=t
+channel=apis
+who=@here
