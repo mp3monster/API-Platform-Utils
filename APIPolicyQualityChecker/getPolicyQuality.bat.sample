@@ -1,0 +1,2 @@
+del report.*
+groovy getPolicyQuality.groovy password client-id client-secret

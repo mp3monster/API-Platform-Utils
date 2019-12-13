@@ -1,0 +1,14 @@
+server=https://xxx.apiplatform.ocp.oraclecloud.com
+#server=https://a.b.c.d 
+IDCS=https://idcs-xxxx.identity.oraclecloud.com/oauth2/v1/token
+scope=https://xxx.apiplatform.ocp.oraclecloud.com:443.apiplatform offline_access
+username=myUsername
+display=f
+reportFilename=myReport.txt
+PlanNameExpr=(myPrefix1|AnotherPrefix) - [\\w-\\s]+
+APINameExpr=[\\w\\s]{2} - [\\w-\\s]+
+AppNameExpr=[\\w-\\s]+
+ServiceNameExpr=[\\w-\\s]{10}
+RequiredRequestPolicies=GatewayBasedRouting,Logging,InterfaceFiltering
+RequiredResponsePolicies=Logging
+#InterfaceFiltering|GatewayBasedRouting|KeyValidation|Logging|
