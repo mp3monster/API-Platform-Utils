@@ -4,7 +4,7 @@
 
 ## Introduction
 
-TBD
+This utility provides basic standards checking against the Oracle API Platform Cloud Service.  The properties file provides the means to define the quality rules.
 
 Background to this utility can be found at  [http://blog.mp3monster.org/2019/12/14/development-stan…for-api-policies/](https://mp3muncher.wordpress.com/?p=4320&preview=true)
 
